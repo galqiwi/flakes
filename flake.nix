@@ -35,7 +35,7 @@
             url = meta.url;
             hash = meta.hash;
           };
-        in rec {
+        in {
           codex = pkgs.stdenv.mkDerivation {
             pname = "codex";
             inherit version src;
@@ -50,7 +50,6 @@
               chmod +x $out/bin/codex
             '';
           };
-          default = codex;
         }
       );
     };
