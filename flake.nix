@@ -3,6 +3,12 @@
 
   outputs = { self, nixpkgs }:
     let
+      systems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
+
       version = "0.107.0";
       tag = "rust-v${version}";
       base = "https://github.com/openai/codex/releases/download/${tag}";
@@ -25,20 +31,27 @@
         };
       };
 
-      forEachSystem = nixpkgs.lib.genAttrs (builtins.attrNames platforms);
+      claudeCodeVersion = "2.1.68";
+      claudeCodeSrc = {
+        url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${claudeCodeVersion}.tgz";
+        hash = "sha512-JfUAZSl7YM94uXBze2Kl5xgo/3mVjPIZQg+cOoQThIA16VLsb53FguiUJtt9WOcC3kgaHshvV/bFTrFFuKWqVQ==";
+      };
+
+      forEachSystem = nixpkgs.lib.genAttrs systems;
     in {
       packages = forEachSystem (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          meta = platforms.${system};
-          src = pkgs.fetchurl {
-            url = meta.url;
-            hash = meta.hash;
+          codexMeta = platforms.${system};
+          codexSrc = pkgs.fetchurl {
+            url = codexMeta.url;
+            hash = codexMeta.hash;
           };
         in {
           codex = pkgs.stdenv.mkDerivation {
             pname = "codex";
-            inherit version src;
+            inherit version;
+            src = codexSrc;
             sourceRoot = ".";
             nativeBuildInputs = [ pkgs.gnutar ];
             unpackPhase = ''
@@ -46,11 +59,35 @@
             '';
             installPhase = ''
               mkdir -p $out/bin
-              cp ${meta.bin} $out/bin/codex
+              cp ${codexMeta.bin} $out/bin/codex
               chmod +x $out/bin/codex
             '';
           };
+
+          claude-code = pkgs.stdenv.mkDerivation {
+            pname = "claude-code";
+            version = claudeCodeVersion;
+            src = pkgs.fetchurl claudeCodeSrc;
+            sourceRoot = "package";
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib/claude-code $out/bin
+              cp -r . $out/lib/claude-code
+              makeWrapper ${pkgs.nodejs}/bin/node $out/bin/claude \
+                --add-flags "$out/lib/claude-code/cli.js"
+              runHook postInstall
+            '';
+            meta.mainProgram = "claude";
+          };
         }
       );
+
+      apps = forEachSystem (system: {
+        claude-code = {
+          type = "app";
+          program = "${self.packages.${system}.claude-code}/bin/claude";
+        };
+      });
     };
 }
