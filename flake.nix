@@ -9,32 +9,32 @@
         "x86_64-linux"
       ];
 
-      version = "0.114.0";
+      version = "0.116.0";
       tag = "rust-v${version}";
       base = "https://github.com/openai/codex/releases/download/${tag}";
 
       platforms = {
         aarch64-darwin = {
           url = "${base}/codex-aarch64-apple-darwin.tar.gz";
-          hash = "sha256-yY61UGlfmersJ9+ZcaG3aoOssV61VSI4P6MbBJcpfFQ=";
+          hash = "sha256-FIc19fIgmy9qMb18o2icYowubFJo/7oL6T93IPz4kvU=";
           bin = "codex-aarch64-apple-darwin";
         };
         aarch64-linux = {
           url = "${base}/codex-aarch64-unknown-linux-musl.tar.gz";
-          hash = "sha256-fTBzVoEHfBO28NpuiCo6r5ZY3yDRVfXZkiL7ex0pAJk=";
+          hash = "sha256-NEX69ZHy4KLWqvpyYI/PPt72cz09imsO/VVZSKWGF7o=";
           bin = "codex-aarch64-unknown-linux-musl";
         };
         x86_64-linux = {
           url = "${base}/codex-x86_64-unknown-linux-musl.tar.gz";
-          hash = "sha256-kinejFHI7zBWW7UHyXou3ASoCzjkmkNj8zf+Bb7fNOs=";
+          hash = "sha256-r6CJwDLDExeSGrwC+4gUU67UqoADWEEhce/NBp7OoeM=";
           bin = "codex-x86_64-unknown-linux-musl";
         };
       };
 
-      claudeCodeVersion = "2.1.76";
+      claudeCodeVersion = "2.1.81";
       claudeCodeSrc = {
         url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${claudeCodeVersion}.tgz";
-        hash = "sha256-9jZLd7ZQN49skILYN4SHUMWf2w/esCp4+crohwK7eqU=";
+        hash = "sha256-h1rMZyQalKYiC1WXEq/wssImRYUHZIwwjHPJeIvEWy8=";
       };
 
       forEachSystem = nixpkgs.lib.genAttrs systems;
