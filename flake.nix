@@ -47,6 +47,26 @@
             url = codexMeta.url;
             hash = codexMeta.hash;
           };
+
+          # Install a nix-ld shim at the FHS loader path so foreign prebuilt
+          # binaries (e.g. uv's managed CPython) can execute inside the
+          # nix-only container. Linux-only; darwin already has a working loader.
+          isLinux = pkgs.stdenv.hostPlatform.isLinux;
+          isAarch64 = pkgs.stdenv.hostPlatform.isAarch64;
+          ldName = if isAarch64 then "ld-linux-aarch64.so.1" else "ld-linux-x86-64.so.2";
+          fhsLoaderPath = if isAarch64 then "/lib/${ldName}" else "/lib64/${ldName}";
+          nixLoaderPath = "${pkgs.glibc}/lib/${ldName}";
+          nixLdLibraryPath = pkgs.lib.makeLibraryPath [
+            pkgs.glibc
+            pkgs.stdenv.cc.cc.lib
+            pkgs.zlib
+            pkgs.openssl
+          ];
+          fhsWrapperArgs = pkgs.lib.optionalString isLinux ''
+            --run 'if [ ! -e ${fhsLoaderPath} ]; then mkdir -p "$(dirname ${fhsLoaderPath})" 2>/dev/null && ln -sf ${pkgs.nix-ld}/libexec/nix-ld ${fhsLoaderPath} 2>/dev/null || true; fi' \
+            --set NIX_LD ${nixLoaderPath} \
+            --set NIX_LD_LIBRARY_PATH ${nixLdLibraryPath} \
+          '';
         in {
           codex = pkgs.stdenv.mkDerivation {
             pname = "codex";
@@ -75,7 +95,8 @@
               mkdir -p $out/lib/claude-code $out/bin
               cp -r . $out/lib/claude-code
               makeWrapper ${pkgs.nodejs}/bin/node $out/bin/claude \
-                --add-flags "$out/lib/claude-code/cli.js"
+                --add-flags "$out/lib/claude-code/cli.js" \
+                ${fhsWrapperArgs}
               runHook postInstall
             '';
             meta.mainProgram = "claude";
