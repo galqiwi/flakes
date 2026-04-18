@@ -31,20 +31,10 @@
         };
       };
 
-      claudeCodeVersion = "2.1.113";
-      claudeCodePlatforms = {
-        aarch64-darwin = {
-          url = "https://registry.npmjs.org/@anthropic-ai/claude-code-darwin-arm64/-/claude-code-darwin-arm64-${claudeCodeVersion}.tgz";
-          hash = "sha256-kHywplgaoFtQu+1qF9meIBcXj1siAtw5eqQrBTDukBs=";
-        };
-        aarch64-linux = {
-          url = "https://registry.npmjs.org/@anthropic-ai/claude-code-linux-arm64/-/claude-code-linux-arm64-${claudeCodeVersion}.tgz";
-          hash = "sha256-1C9vvnKXQaDgxPjKI71KNap35zROoj2Y5Q+/ykWoq1A=";
-        };
-        x86_64-linux = {
-          url = "https://registry.npmjs.org/@anthropic-ai/claude-code-linux-x64/-/claude-code-linux-x64-${claudeCodeVersion}.tgz";
-          hash = "sha256-C3A6KxXimIE4sbjYbnMijuKqsAJTrCH/zcgovstC0BA=";
-        };
+      claudeCodeVersion = "2.1.110";
+      claudeCodeSrc = {
+        url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${claudeCodeVersion}.tgz";
+        hash = "sha256-qeaNuuKyeJO+4TsBnP9kF6ydtZR8vCCdodqGuJX3alg=";
       };
 
       forEachSystem = nixpkgs.lib.genAttrs systems;
@@ -56,11 +46,6 @@
           codexSrc = pkgs.fetchurl {
             url = codexMeta.url;
             hash = codexMeta.hash;
-          };
-          claudeCodeMeta = claudeCodePlatforms.${system};
-          claudeCodeSrc = pkgs.fetchurl {
-            url = claudeCodeMeta.url;
-            hash = claudeCodeMeta.hash;
           };
 
           # Install a nix-ld shim at the FHS loader path so foreign prebuilt
@@ -102,15 +87,15 @@
           claude-code = pkgs.stdenv.mkDerivation {
             pname = "claude-code";
             version = claudeCodeVersion;
-            src = claudeCodeSrc;
+            src = pkgs.fetchurl claudeCodeSrc;
             sourceRoot = "package";
             nativeBuildInputs = [ pkgs.makeWrapper ];
             installPhase = ''
               runHook preInstall
               mkdir -p $out/lib/claude-code $out/bin
-              cp claude $out/lib/claude-code/claude
-              chmod +x $out/lib/claude-code/claude
-              makeWrapper $out/lib/claude-code/claude $out/bin/claude \
+              cp -r . $out/lib/claude-code
+              makeWrapper ${pkgs.nodejs}/bin/node $out/bin/claude \
+                --add-flags "$out/lib/claude-code/cli.js" \
                 ${fhsWrapperArgs}
               runHook postInstall
             '';
