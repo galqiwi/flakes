@@ -9,24 +9,24 @@
         "x86_64-linux"
       ];
 
-      version = "0.125.0";
+      version = "0.128.0";
       tag = "rust-v${version}";
       base = "https://github.com/openai/codex/releases/download/${tag}";
 
       platforms = {
         aarch64-darwin = {
           url = "${base}/codex-aarch64-apple-darwin.tar.gz";
-          hash = "sha256-apJtwMuWOdNJtivtoZB8U8sTSXCefcnPxTJo9DjLdJ8=";
+          hash = "sha256-8GggLoqJjCQMjAaEAbzNMLp7VvYfX/zRSD1UXUeq89U=";
           bin = "codex-aarch64-apple-darwin";
         };
         aarch64-linux = {
           url = "${base}/codex-aarch64-unknown-linux-musl.tar.gz";
-          hash = "sha256-cAvDskCWPWrg9PYHjU7eDrB5mf/AjRNIuLCR3qxLecg=";
+          hash = "sha256-MWG01TBP6ve++7D8tBv5p+5A4xun4+821AoAqjumy9A=";
           bin = "codex-aarch64-unknown-linux-musl";
         };
         x86_64-linux = {
           url = "${base}/codex-x86_64-unknown-linux-musl.tar.gz";
-          hash = "sha256-SiClOUOn5qDF+kRj1OR8WN2OVT7OveRVpBB+mQa/sAE=";
+          hash = "sha256-iGuF5hGMC0MjRDfKAH++kjYRpTsQPQDg0650rvsg4jo=";
           bin = "codex-x86_64-unknown-linux-musl";
         };
       };
