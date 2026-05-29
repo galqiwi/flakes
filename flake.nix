@@ -31,10 +31,21 @@
         };
       };
 
-      claudeCodeVersion = "2.1.110";
-      claudeCodeSrc = {
-        url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${claudeCodeVersion}.tgz";
-        hash = "sha256-qeaNuuKyeJO+4TsBnP9kF6ydtZR8vCCdodqGuJX3alg=";
+      claudeCodeVersion = "2.1.154";
+      claudeCodeBase = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases";
+      claudeCodePlatforms = {
+        aarch64-darwin = {
+          key = "darwin-arm64";
+          sha256 = "bc9881b107d7be1743c64c8b72dd66798f5d0947dbc48ed0d77964c473661fd4";
+        };
+        aarch64-linux = {
+          key = "linux-arm64";
+          sha256 = "9f732de278f7adc61d29fd5b055ddaf1bae3bb26d75fe6e06a125602565777a8";
+        };
+        x86_64-linux = {
+          key = "linux-x64";
+          sha256 = "67f6cab7e6c124010f62ac18f8078bc09e0db6a5b9e8ae874e9e73033c451793";
+        };
       };
 
       forEachSystem = nixpkgs.lib.genAttrs systems;
@@ -47,6 +58,7 @@
             url = codexMeta.url;
             hash = codexMeta.hash;
           };
+          claudeCodeMeta = claudeCodePlatforms.${system};
 
           # Install a nix-ld shim at the FHS loader path so foreign prebuilt
           # binaries (e.g. uv's managed CPython) can execute inside the
@@ -84,18 +96,31 @@
             '';
           };
 
-          claude-code = pkgs.stdenv.mkDerivation {
+          claude-code = pkgs.stdenvNoCC.mkDerivation {
             pname = "claude-code";
             version = claudeCodeVersion;
-            src = pkgs.fetchurl claudeCodeSrc;
-            sourceRoot = "package";
-            nativeBuildInputs = [ pkgs.makeWrapper ];
+            src = pkgs.fetchurl {
+              url = "${claudeCodeBase}/${claudeCodeVersion}/${claudeCodeMeta.key}/claude";
+              sha256 = claudeCodeMeta.sha256;
+            };
+            dontUnpack = true;
+            dontBuild = true;
+            dontStrip = true;
+            nativeBuildInputs = [ pkgs.makeWrapper ]
+              ++ pkgs.lib.optionals isLinux [ pkgs.autoPatchelfHook ];
+            buildInputs = pkgs.lib.optionals isLinux [ pkgs.alsa-lib ];
             installPhase = ''
               runHook preInstall
-              mkdir -p $out/lib/claude-code $out/bin
-              cp -r . $out/lib/claude-code
-              makeWrapper ${pkgs.nodejs}/bin/node $out/bin/claude \
-                --add-flags "$out/lib/claude-code/cli.js" \
+              install -Dm755 $src $out/bin/claude
+              wrapProgram $out/bin/claude \
+                --set DISABLE_AUTOUPDATER 1 \
+                --set-default FORCE_AUTOUPDATE_PLUGINS 1 \
+                --set DISABLE_INSTALLATION_CHECKS 1 \
+                --set USE_BUILTIN_RIPGREP 0 \
+                --prefix PATH : ${pkgs.lib.makeBinPath (
+                  [ pkgs.procps pkgs.ripgrep ]
+                  ++ pkgs.lib.optionals isLinux [ pkgs.bubblewrap pkgs.socat ]
+                )} \
                 ${fhsWrapperArgs}
               runHook postInstall
             '';
